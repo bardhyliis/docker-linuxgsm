@@ -54,9 +54,9 @@ echo -e ""
 echo -e "Check Permissions"
 echo -e "================================="
 echo -e "setting UID to ${UID}"
-usermod -u "${UID}" -m -d /data linuxgsm > /dev/null 2>&1
+usermod -u "${UID}" -m -d /data rayhosting > /dev/null 2>&1
 echo -e "setting GID to ${GID}"
-groupmod -g "${GID}" linuxgsm
+groupmod -g "${GID}" rayhosting
 echo -e "updating permissions for /data"
 chown -R "${USER}":"${USER}" /data
 echo -e "updating permissions for /app"
