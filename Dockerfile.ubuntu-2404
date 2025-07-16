@@ -29,6 +29,28 @@ ENV GID=1000
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
+# Install required packages: openssh-server, wget, acl, and tini.
+RUN echo "**** Install Base Packages ****" \
+    && apt-get update && apt-get install -y \
+    openssh-server \
+    wget \
+    acl \
+    tini \
+    && apt-get clean
+
+# Install required packages: Wine.
+RUN echo "**** Install Wine ****" \
+  && dpkg --add-architecture i386 && \
+  apt-get update && \
+  apt-get install -y --no-install-recommends \
+  wine64 wine32 wine \
+  xvfb \
+  xauth \
+  x11-utils \
+  cabextract \
+  winbind \
+  unzip
+
 ## Install Base LinuxGSM Requirements
 RUN echo "**** Install Base LinuxGSM Requirements ****" \
   && apt-get update \
@@ -78,26 +100,6 @@ RUN echo "**** Install Base LinuxGSM Requirements ****" \
   && rm -rf /tmp/* \
   && rm -rf /var/tmp/*
 
-# Install required packages: openssh-server, wget, acl, and tini.
-RUN apt-get update && apt-get install -y \
-    openssh-server \
-    wget \
-    acl \
-    tini \
-    && apt-get clean
-
-# Install required packages: Wine.
-RUN dpkg --add-architecture i386 && \
-apt-get update && \
-apt-get install -y --no-install-recommends \
-  wine64 wine32 wine \
-  xvfb \
-  xauth \
-  x11-utils \
-  cabextract \
-  winbind \
-  unzip
-
 # Install gotty
 RUN cd / && \
     wget https://github.com/yudai/gotty/releases/download/v1.0.1/gotty_linux_amd64.tar.gz && \
@@ -144,7 +146,8 @@ HEALTHCHECK --interval=1m --timeout=1m --start-period=2m --retries=1 CMD /app/en
 
 # ---- create a clean Wine prefix for rayhosting ----
 USER $USER
-RUN xvfb-run --server-args="-terminate" wineboot -u
+RUN WINEDEBUG=-all WINEDLLOVERRIDES="mshtml,mscoree=" wineboot --init
+#RUN env DISPLAY=:99 xvfb-run --server-args="-terminate" wineboot -u
 USER root
 
 ## Download linuxgsm.sh
