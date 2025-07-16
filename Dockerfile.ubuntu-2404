@@ -9,7 +9,7 @@ FROM ghcr.io/gameservermanagers/steamcmd:ubuntu-24.04
 RUN touch /var/mail/ubuntu && chown ubuntu /var/mail/ubuntu && userdel -r ubuntu
 
 LABEL maintainer="RayHosting <support@ray-hosting.com>"
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 ENV TERM=xterm
 ENV LGSM_GITHUBUSER=bardhyliis
 ENV LGSM_GITHUBREPO=LinuxGSM
@@ -128,8 +128,8 @@ RUN echo "**** Install GameDig ****" \
 
 WORKDIR /app
 
-## Add linuxgsm user
-RUN echo "**** Add linuxgsm user ****" \
+## Add rayhosting user
+RUN echo "**** Add rayhosting user ****" \
   && mkdir /data \
   # Create the user
   && groupadd --gid $GID $USER \
@@ -141,6 +141,11 @@ RUN echo "**** Add linuxgsm user ****" \
   && chown $USER:$USER /data
 
 HEALTHCHECK --interval=1m --timeout=1m --start-period=2m --retries=1 CMD /app/entrypoint-healthcheck.sh || exit 1
+
+# ---- create a clean Wine prefix for rayhosting ----
+USER $USER
+RUN xvfb-run --server-args="-terminate" wineboot -u
+USER root
 
 ## Download linuxgsm.sh
 RUN echo "**** Download linuxgsm.sh ****" \
