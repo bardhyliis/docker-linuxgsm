@@ -8,10 +8,10 @@ FROM ghcr.io/gameservermanagers/steamcmd:ubuntu-24.04
 ## Remove ubuntu user added in 24.04 by default
 RUN touch /var/mail/ubuntu && chown ubuntu /var/mail/ubuntu && userdel -r ubuntu
 
-LABEL maintainer="LinuxGSM <me@danielgibbs.co.uk>"
+LABEL maintainer="RayHosting <support@ray-hosting.com>"
 ENV DEBIAN_FRONTEND noninteractive
 ENV TERM=xterm
-ENV LGSM_GITHUBUSER=GameServerManagers
+ENV LGSM_GITHUBUSER=bardhyliis
 ENV LGSM_GITHUBREPO=LinuxGSM
 ENV LGSM_GITHUBBRANCH=master
 ENV LGSM_LOGDIR=/data/log
@@ -20,10 +20,10 @@ ENV LGSM_DATADIR=/data/data
 ENV LGSM_CONFIG=/data/config-lgsm
 ENV LGSM_COMPRESSEDMAPSDIR=/data/Maps-Compressed
 ENV LGSM_DEV=false
-ENV GAMESERVER=jc2server
+ENV GAMESERVER=
 ENV VALIDATE_ON_START=false
 ENV UPDATE_CHECK=60
-ENV USER=linuxgsm
+ENV USER=rayhosting
 ENV UID=1000
 ENV GID=1000
 
@@ -78,6 +78,34 @@ RUN echo "**** Install Base LinuxGSM Requirements ****" \
   && rm -rf /tmp/* \
   && rm -rf /var/tmp/*
 
+# Install required packages: openssh-server, wget, acl, and tini.
+RUN apt-get update && apt-get install -y \
+    openssh-server \
+    wget \
+    acl \
+    tini \
+    && apt-get clean
+
+# Install required packages: Wine.
+RUN dpkg --add-architecture i386 && \
+apt-get update && \
+apt-get install -y --no-install-recommends \
+  wine64 wine32 wine \
+  xvfb \
+  xauth \
+  x11-utils \
+  cabextract \
+  winbind \
+  unzip
+
+# Install gotty
+RUN cd / && \
+    wget https://github.com/yudai/gotty/releases/download/v1.0.1/gotty_linux_amd64.tar.gz && \
+    tar -xvf gotty_linux_amd64.tar.gz && \
+    mv gotty /usr/local/bin/ && \
+    chmod +x /usr/local/bin/gotty && \
+    rm -f gotty_linux_amd64.tar.gz
+
 # Install Node.js
 RUN echo "**** Install Node.js ****" \
   && set -uex \
@@ -117,11 +145,11 @@ HEALTHCHECK --interval=1m --timeout=1m --start-period=2m --retries=1 CMD /app/en
 ## Download linuxgsm.sh
 RUN echo "**** Download linuxgsm.sh ****" \
   && set -ex \
-  && curl -Lo linuxgsm.sh "https://raw.githubusercontent.com/GameServerManagers/LinuxGSM/${LGSM_GITHUBBRANCH}/linuxgsm.sh" \
+  && curl -Lo linuxgsm.sh "https://raw.githubusercontent.com/bardhyliis/LinuxGSM/${LGSM_GITHUBBRANCH}/linuxgsm.sh" \
   && chmod +x linuxgsm.sh
 
 RUN echo "**** Get LinuxGSM Modules ****" \
-  && git clone --filter=blob:none --no-checkout --sparse https://github.com/GameServerManagers/LinuxGSM.git \
+  && git clone --filter=blob:none --no-checkout --sparse https://github.com/bardhyliis/LinuxGSM.git \
   && cd LinuxGSM \
   && git sparse-checkout set --cone \
   && git sparse-checkout set lgsm/modules \

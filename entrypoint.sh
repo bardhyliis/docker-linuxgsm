@@ -14,7 +14,7 @@ trap exit_handler SIGQUIT SIGINT SIGTERM
 
 DISTRO="$(grep "PRETTY_NAME" /etc/os-release | awk -F = '{gsub(/"/,"",$2);print $2}')"
 echo -e ""
-echo -e "Welcome to the LinuxGSM"
+echo -e "Welcome to LinuxGSM"
 echo -e "================================================================================"
 echo -e "CURRENT TIME: $(date)"
 echo -e "BUILD TIME: $(cat /build-time.txt)"
