@@ -39,17 +39,35 @@ RUN echo "**** Install Base Packages ****" \
     && apt-get clean
 
 # Install required packages: Wine.
-RUN echo "**** Install Wine ****" \
-  && dpkg --add-architecture i386 && \
-  apt-get update && \
-  apt-get install -y --no-install-recommends \
-  wine64 wine32 wine \
-  xvfb \
-  xauth \
-  x11-utils \
+# RUN echo "**** Install Wine ****" \
+#   && dpkg --add-architecture i386 && \
+#   apt-get update && \
+#   apt-get install -y --no-install-recommends \
+#   wine64 wine32 wine \
+#   xvfb \
+#   xauth \
+#   x11-utils \
+#   cabextract \
+#   winbind \
+#   unzip
+
+RUN echo "**** Install Utils ****" \
+  && apt-get update && apt-get install -y --no-install-recommends \
   cabextract \
   winbind \
   unzip
+
+RUN echo "**** Install Proton and Xvfb ****" \
+  && apt-get update && apt-get install -y --no-install-recommends xvfb xauth x11-utils \
+  && mkdir -p /opt/proton-ge && \
+  cd /opt/proton-ge && \
+  wget https://github.com/GloriousEggroll/proton-ge-custom/releases/download/GE-Proton10-10/GE-Proton10-10.tar.gz && \
+  tar -xvzf GE-Proton10-10.tar.gz && \
+  \
+  # Create wrapper script \
+  echo '#!/bin/bash' > /usr/local/bin/proton && \
+  echo 'exec /opt/proton-ge/GE-Proton10-10/proton "$@"' >> /usr/local/bin/proton && \
+  chmod +x /usr/local/bin/proton
 
 ## Install Base LinuxGSM Requirements
 RUN echo "**** Install Base LinuxGSM Requirements ****" \
