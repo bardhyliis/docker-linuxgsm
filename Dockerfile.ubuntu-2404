@@ -26,6 +26,7 @@ ENV UPDATE_CHECK=60
 ENV USER=rayhosting
 ENV UID=1000
 ENV GID=1000
+ENV STEAM_COMPAT_CLIENT_INSTALL_PATH=/app/steam
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -50,6 +51,28 @@ RUN echo "**** Install Wine ****" \
   cabextract \
   winbind \
   unzip
+
+# Download Proton GE
+# Download Proton GE, extract, clean up, and create directories
+RUN set -ex && \
+  # Download latest Proton GE tarball URL from GitHub API
+  PROTON_URL=$(curl -s https://api.github.com/repos/GloriousEggroll/proton-ge-custom/releases/latest \
+    | grep browser_download_url \
+    | cut -d '"' -f 4 \
+    | grep '\.tar\.gz$') && \
+  curl -LOJ "$PROTON_URL" && \
+  # Extract into /usr/local/bin stripping top folder
+  tar -xzf GE-Proton*.tar.gz -C /usr/local/bin/ --strip-components=1 && \
+  rm GE-Proton*.tar.gz && \
+  # Create required directories for Steam compatibility
+  mkdir -p "$STEAM_COMPAT_CLIENT_INSTALL_PATH"
+
+# Proton fix: regenerate consistent D-Bus machine ID for container
+RUN set -ex && \
+  rm -f /etc/machine-id && \
+  dbus-uuidgen --ensure=/etc/machine-id && \
+  rm -f /var/lib/dbus/machine-id && \
+  dbus-uuidgen --ensure
 
 ## Install Base LinuxGSM Requirements
 RUN echo "**** Install Base LinuxGSM Requirements ****" \
