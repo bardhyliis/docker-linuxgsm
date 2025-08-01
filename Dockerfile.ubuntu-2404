@@ -52,7 +52,6 @@ RUN echo "**** Install Wine ****" \
   winbind \
   unzip
 
-# Download Proton GE
 # Download Proton GE, extract, clean up, and create directories
 RUN set -ex && \
   # Download latest Proton GE tarball URL from GitHub API
