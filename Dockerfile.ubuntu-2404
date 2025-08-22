@@ -5,8 +5,8 @@
 #
 
 FROM ghcr.io/gameservermanagers/steamcmd:ubuntu-24.04
-## Remove ubuntu user added in 24.04 by default
-RUN touch /var/mail/ubuntu && chown ubuntu /var/mail/ubuntu && userdel -r ubuntu
+## Remove steam user from upstream base image if present
+RUN if id -u steam >/dev/null 2>&1; then echo "Removing steam user from base image"; userdel -r steam || true; else echo "steam user not present"; fi
 
 LABEL maintainer="RayHosting <support@ray-hosting.com>"
 ENV DEBIAN_FRONTEND=noninteractive
@@ -26,7 +26,6 @@ ENV UPDATE_CHECK=60
 ENV USER=rayhosting
 ENV UID=1000
 ENV GID=1000
-ENV STEAM_COMPAT_CLIENT_INSTALL_PATH=/app/steam
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -37,41 +36,8 @@ RUN echo "**** Install Base Packages ****" \
     wget \
     acl \
     tini \
+    findutils \
     && apt-get clean
-
-# Install required packages: Wine.
-RUN echo "**** Install Wine ****" \
-  && dpkg --add-architecture i386 && \
-  apt-get update && \
-  apt-get install -y --no-install-recommends \
-  wine64 wine32 wine \
-  xvfb \
-  xauth \
-  x11-utils \
-  cabextract \
-  winbind \
-  unzip
-
-# Download Proton GE, extract, clean up, and create directories
-RUN set -ex && \
-  # Download latest Proton GE tarball URL from GitHub API
-  PROTON_URL=$(curl -s https://api.github.com/repos/GloriousEggroll/proton-ge-custom/releases/latest \
-    | grep browser_download_url \
-    | cut -d '"' -f 4 \
-    | grep '\.tar\.gz$') && \
-  curl -LOJ "$PROTON_URL" && \
-  # Extract into /usr/local/bin stripping top folder
-  tar -xzf GE-Proton*.tar.gz -C /usr/local/bin/ --strip-components=1 && \
-  rm GE-Proton*.tar.gz && \
-  # Create required directories for Steam compatibility
-  mkdir -p "$STEAM_COMPAT_CLIENT_INSTALL_PATH"
-
-# Proton fix: regenerate consistent D-Bus machine ID for container
-RUN set -ex && \
-  rm -f /etc/machine-id && \
-  dbus-uuidgen --ensure=/etc/machine-id && \
-  rm -f /var/lib/dbus/machine-id && \
-  dbus-uuidgen --ensure
 
 ## Install Base LinuxGSM Requirements
 RUN echo "**** Install Base LinuxGSM Requirements ****" \
@@ -79,6 +45,7 @@ RUN echo "**** Install Base LinuxGSM Requirements ****" \
   && apt-get install -y software-properties-common \
   && add-apt-repository multiverse \
   && add-apt-repository ppa:git-core/ppa \
+  && add-apt-repository ppa:dotnet/backports \
   && apt-get update \
   && apt-get install -y \
   bc \
@@ -108,7 +75,8 @@ RUN echo "**** Install Base LinuxGSM Requirements ****" \
   unzip \
   util-linux \
   uuid-runtime \
-  wget \
+  # wget \
+  libxml2-utils \
   xz-utils \
   zstd \
   # Docker Extras
@@ -167,10 +135,10 @@ RUN echo "**** Add rayhosting user ****" \
 HEALTHCHECK --interval=1m --timeout=1m --start-period=2m --retries=1 CMD /app/entrypoint-healthcheck.sh || exit 1
 
 # ---- create a clean Wine prefix for rayhosting ----
-USER $USER
-RUN WINEDEBUG=-all WINEDLLOVERRIDES="mshtml,mscoree=" wineboot --init
-#RUN env DISPLAY=:99 xvfb-run --server-args="-terminate" wineboot -u
-USER root
+# USER $USER
+# RUN WINEDEBUG=-all WINEDLLOVERRIDES="mshtml,mscoree=" wineboot --init
+# #RUN env DISPLAY=:99 xvfb-run --server-args="-terminate" wineboot -u
+# USER root
 
 ## Download linuxgsm.sh
 RUN echo "**** Download linuxgsm.sh ****" \
@@ -190,6 +158,14 @@ RUN echo "**** Get LinuxGSM Modules ****" \
   && cd ../ \
   && rm -rf LinuxGSM \
   && chown -R $USER:$USER /app
+
+# RUN wget https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
+#     dpkg -i packages-microsoft-prod.deb && \
+#     apt update -y && \
+#     apt install -y dotnet-runtime-6.0 && \
+#     export DOTNET_ROOT=/usr/lib/dotnet && \
+#     export PATH=$DOTNET_ROOT:$PATH && \
+#     source /etc/environment
 
 ARG CACHEBUST=1
 RUN echo "$CACHEBUST"
