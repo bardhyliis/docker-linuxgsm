@@ -27,6 +27,11 @@ ENV USER=rayhosting
 ENV UID=1000
 ENV GID=1000
 
+# declare the build arg
+ARG PAT
+# make it available inside the container
+ENV PAT=$PAT
+
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Install required packages: openssh-server, wget, acl, and tini.
