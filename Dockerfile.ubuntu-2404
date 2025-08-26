@@ -26,8 +26,6 @@ ENV UPDATE_CHECK=60
 ENV USER=rayhosting
 ENV UID=1000
 ENV GID=1000
-# Set Proton directory
-ENV PROTON_DIR=/opt/proton
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -39,18 +37,8 @@ RUN echo "**** Install Base Packages ****" \
     acl \
     tini \
     findutils \
+    rsnapshot \
     && apt-get clean
-
-# Install required packages for Proton.
-RUN echo "**** Installing Proton deps ****" \
-  && dpkg --add-architecture i386 && \
-  apt-get update && \
-  apt-get install -y --no-install-recommends \
-  xvfb \
-  xauth \
-  x11-utils \
-  cabextract \
-  winbind
 
 ## Install Base LinuxGSM Requirements
 RUN echo "**** Install Base LinuxGSM Requirements ****" \
@@ -102,36 +90,6 @@ RUN echo "**** Install Base LinuxGSM Requirements ****" \
   && rm -rf /var/lib/apt/lists/* \
   && rm -rf /tmp/* \
   && rm -rf /var/tmp/*
-
-# ----------------------------
-# Proton 10.0-2c Installation
-# ----------------------------
-
-# Create Proton folder
-RUN mkdir -p $PROTON_DIR
-
-# Download and extract Proton 10.0-2c
-WORKDIR /tmp
-RUN wget -qO proton.tar.gz https://github.com/ValveSoftware/Proton/archive/refs/tags/proton-10.0-2c.tar.gz && \
-    tar -xf proton.tar.gz -C $PROTON_DIR --strip-components=1 && \
-    rm proton.tar.gz
-
-# Symlink proton binary globally
-RUN ln -s $PROTON_DIR/proton /usr/local/bin/proton
-
-# Setup Proton environment
-RUN mkdir -p /root/.steam/steam/compatibilitytools.d && \
-    mkdir -p /root/.steam/steam/steamapps/compatdata && \
-    mkdir -p /root/.config/protonfixes && \
-    chmod -R 777 /root/.steam/steam/steamapps/compatdata
-
-ENV PROTON_COMPAT_DATA_PATH=/root/.steam/steam/steamapps/compatdata/1430110
-ENV STEAM_COMPAT_DATA_PATH=$PROTON_COMPAT_DATA_PATH
-ENV WINEPREFIX=$PROTON_COMPAT_DATA_PATH/pfx
-ENV STEAM_COMPAT_CLIENT_INSTALL_PATH=/root/.steam/steam
-
-# Create Wine prefix folder
-RUN mkdir -p $WINEPREFIX && chmod -R 777 $WINEPREFIX
 
 # Install gotty
 RUN cd / && \
