@@ -66,5 +66,10 @@ export HOME=/data
 echo -e ""
 echo -e "Switch to user ${USER}"
 echo -e "================================="
+# Check if Server is suspended
+if [[ $SERVER_SUSPENDED == true ]]; then
+  echo "SERVER is Suspended (SERVER_SUSPENDED=$SERVER_SUSPENDED)"
+  exit 1
+fi
 exec gosu "${USER}" /app/entrypoint-user.sh &
 wait
